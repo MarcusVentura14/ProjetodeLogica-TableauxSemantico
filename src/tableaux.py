@@ -91,7 +91,7 @@ def tableaux(premissas: List[Formula], conclusoes: List[Formula]):
     # Assinala cada formula na lista de premissas com T
     # Assinala cada formula na lista de conclusões com F
     ramo_inicial = [FormulaAssinalada(True, p) for p in premissas] + [FormulaAssinalada(False, c) for c in conclusoes] 
-    pilha_de_ramos = []  # Criação da pilha que guardará os caminho até uma bifurcação
+    pilha_de_ramos = []  # Criação da pilha para o "backtracking"
     ramo_atual = ramo_inicial
 
     while True:
