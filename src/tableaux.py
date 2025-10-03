@@ -36,7 +36,7 @@ class Implica:
         return f"({self.esquerda} → {self.direita})"
 
 
-# Tipo para representar qualquer uma das classes de fórmula acima
+# Tipo que representa qualquer uma das classes de fórmula
 Formula = Union[Atomica, Nao, E, Ou, Implica]
 
 
@@ -88,23 +88,25 @@ def expansao_da_formula(sf: FormulaAssinalada) -> Tuple[FormulaAssinalada, Union
 def tableaux(premissas: List[Formula], conclusoes: List[Formula]):
     
     # Inicialização:
-        # p/ cada formula na lista de premissas assinalamos com T
-        # p/ cada formula na lista de conclusões assinalamos com F
+    # Assinala cada formula na lista de premissas com T
+    # Assinala cada formula na lista de conclusões com F
     ramo_inicial = [FormulaAssinalada(True, p) for p in premissas] + [FormulaAssinalada(False, c) for c in conclusoes] 
-    pilha_de_ramos = []  # Criação da pilha que guardará o caminho até uma bifurcação
+    pilha_de_ramos = []  # Criação da pilha que guardará os caminho até uma bifurcação
     ramo_atual = ramo_inicial
 
     while True:
-        # Verifica se o ramo atual contém uma contradição
+        # Verifica se o ramo atual contém uma contradição:
+        # cria dois conjuntos de fórmulas atômicas devidamente separadas de acordo com sua valoração (T ou F)
         true_atoms = {sf.formula for sf in ramo_atual if isinstance(sf.formula, Atomica) and sf.valoracao}
         false_atoms = {sf.formula for sf in ramo_atual if isinstance(sf.formula, Atomica) and not sf.valoracao}
 
-        # Se houver um elemento atômico presente em ambos os conjuntos,temos uma contradição
+        # Se houver um elemento atômico presente em ambos os conjuntos, há uma contradição
         tem_contradicao = not true_atoms.isdisjoint(false_atoms)
 
         if tem_contradicao:
             if not pilha_de_ramos:
-                # Todos os ramos foram explorados e fecharam
+                # Se há contradição no ramo atual e não há mais elementos na pilha então todos os 
+                # ramos foram explorados e fecharam. Logo, tem-se um tableaux fechado.
                 return "VÁLIDO", None
             else:
                 # Restaura o estado anterior para explorar o ramo alternativo
@@ -112,13 +114,14 @@ def tableaux(premissas: List[Formula], conclusoes: List[Formula]):
                 continue # Volta para o início do loop com o novo ramo
 
         # Encontra a próxima fórmula não expandida para aplicar uma regra
+
         proxima_formula_para_expandir = None
         # Prioriza regras alfa para evitar ramificações desnecessárias
         for sf in ramo_atual:
             if not sf.expandida and formula_alfa(sf):
                 proxima_formula_para_expandir = sf
                 break
-        
+        # Expandidas todas as fórmulas alfa, expande, agora, as fórmulas beta
         if not proxima_formula_para_expandir:
             for sf in ramo_atual:
                  if not sf.expandida and formula_beta(sf):
@@ -129,21 +132,21 @@ def tableaux(premissas: List[Formula], conclusoes: List[Formula]):
         if proxima_formula_para_expandir:
             proxima_formula_para_expandir.expandida = True
             
-            # 4. Aplica regra alfa (sem ramificação)
+            # Aplica regra alfa (sem ramificação)
             if formula_alfa(proxima_formula_para_expandir):
                 res1, res2 = expansao_da_formula(proxima_formula_para_expandir)
                 ramo_atual.append(res1)
                 if res2:
                     ramo_atual.append(res2)
             
-            # 5. Aplica regra beta (com ramificação)
+            # Aplica regra beta (com ramificação)
             elif formula_beta(proxima_formula_para_expandir):
                 beta1, beta2 = expansao_da_formula(proxima_formula_para_expandir)
                 
-                # Cria uma cópia do ramo atual para o backtracking
-                # A fórmula expandida não precisa ir na cópia
+                # Cria uma cópia do ramo atual, para o "backtracking", que não inclui a fórmula original da
+                # bifurcação, mas tem o segundo caminho (beta2) adicionado a ela antes de ser guardada na pilha.
                 copia_ramo_para_pilha = [sf for sf in ramo_atual if sf is not proxima_formula_para_expandir]
-                copia_ramo_para_pilha.append(beta2) # Adiciona o segundo caminho
+                copia_ramo_para_pilha.append(beta2) 
                 pilha_de_ramos.append(copia_ramo_para_pilha)
 
                 # Continua a exploração com o primeiro caminho
